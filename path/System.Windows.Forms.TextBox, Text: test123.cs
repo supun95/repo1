@@ -9,7 +9,7 @@
 
                 while (Data_reader.Read())
                 {
-                    assign_input.Items.Add(Data_reader["user_name"]);
+                    assign_input.Items.Add(Data_reader["Hello"]);
                 }
             }
             catch (SqlException ex)
@@ -18,3 +18,4 @@
             }
             mySqlConnection.Close();
         }
+06/01/2017 13:40:25
