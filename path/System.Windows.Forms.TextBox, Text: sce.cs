@@ -1,20 +1,48 @@
-   public void member_bug_assign()
+private void button1_Click(object sender, EventArgs e)
         {
-            mySqlConnection.Open();
-            String select_user = "SELECT * FROM users";
-            SqlCommand SqlCommand = new SqlCommand(select_user, mySqlConnection);
-            try
-            {
-                SqlDataReader Data_reader = SqlCommand.ExecuteReader();
+            //If the logPath exists, delete the file
+            string logPath = "Output.Log";
+            if (File.Exists(logPath)) {
+                File.Delete(logPath);
+            }
 
-                while (Data_reader.Read())
-                {
-                    assign_input.Items.Add(Data_reader["user_name"]);
-                }
-            }
-            catch (SqlException ex)
+            string[] Servers = richTextBox1.Text.Split('\n');
+
+            //Pass each server name from the listview to the 'Server' variable
+            foreach (string Server in Servers) {
+                //PowerShell Script
+                string PSScript = @"
+            param([Parameter(Mandatory = $true, ValueFromPipeline = $true)][string] $server)
+
+            Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force;
+            Import-Module SQLServer;
+            Try 
             {
-                MessageBox.Show(ex.Message, System.Windows.Forms.Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Set-Location SQLServer:\\SQL\\$server -ErrorAction Stop; 
+                Get-ChildItem | Select-Object -ExpandProperty Name;
+            } 
+            Catch 
+            {
+                echo 'No SQL Server Instances'; 
             }
-            mySqlConnection.Close();
+            ";
+                using (PowerShell psInstance = PowerShell.Create()) {                               
+                    psInstance.AddScript(PSScript);
+                    psInstance.AddParameter("server", Server);
+                    Collection<PSObject> results = psInstance.Invoke();
+                    if (psInstance.Streams.Error.Count > 0) {
+                        foreach (var errorRecord in psInstance.Streams.Error) {
+                            MessageBox.Show(errorRecord.ToString());
+                        }
+                    }               
+                    foreach (PSObject result in results) {
+                        File.AppendAllText(logPath, result + Environment.NewLine);
+                        // listBox1.Items.Add(result);
+                    }               
+                }
+
+            }
         }
+
+
+12/01/2017 12:02:59
